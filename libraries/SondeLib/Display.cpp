@@ -42,6 +42,15 @@ static unsigned char stattiles[5][4] =  {
    0x00, 0x00, 0x00, 0x00 ,   // ' ' == unknown/unassigned
    0x07, 0x05, 0x07, 0x00 };  // ° = rx ok, but no valid position
 
+static unsigned char arrowtiles[8][8] =  {
+   0x00, 0x10, 0x20, 0x40 , 0xFF, 0x40, 0x20, 0x10 ,   // South
+   0xF8, 0xC0, 0xA0, 0x90 , 0x88, 0x04, 0x01, 0x01 ,   // South-West
+   0x08, 0x1C, 0x2A, 0x49 , 0x08, 0x08, 0x08, 0x08 ,   // West
+   0x1F, 0x03, 0x05, 0x09 , 0x11, 0x20, 0x40, 0x80 ,   // North-West
+   0x00, 0x08, 0x04, 0x02 , 0xFF, 0x02, 0x04, 0x08 ,   // North
+   0x80, 0x40, 0x20, 0x11 , 0x09, 0x05, 0x03, 0x1F ,   // North-East
+   0x08, 0x08, 0x08, 0x08 , 0x49, 0x2A, 0x1C, 0x08 ,   // East
+   0x01, 0x02, 0x04, 0x88 , 0x90, 0xA0, 0xC0, 0xF8 };  // South-East
 
 //static uint8_t halfdb_tile[8]={0x80, 0x27, 0x45, 0x45, 0x45, 0x39, 0x00, 0x00};
 
@@ -566,6 +575,7 @@ void Display::drawGPS(DispEntry *de) {
 		// dIrection
 		if( (!nmea.isValid()) || ((sonde.si()->validPos&0x03)!=0x03 ) ) {
 			u8x8->drawString(de->x, de->y, "---");
+			u8x8->drawString(de->x+3, de->y, " ");
 			break;
 		}
 		{
@@ -583,7 +593,20 @@ void Display::drawGPS(DispEntry *de) {
 		u8x8->drawString(de->x, de->y, buf);
 		if(de->extra[1]==(char)176)
 			u8x8->drawTile(de->x+3, de->y, 1, deg_tile);
-		}
+		// Show drive direction arrow
+		float course = (nmea.getCourse()/1000.);
+		Serial.printf("course is %.2f\n", course);
+		float diff = (dir - course);
+		if(diff>=180)
+			diff = diff - 360;
+		if(diff<-180)
+			diff = diff + 360;
+		Serial.printf("diff is %.2f\n", diff);
+		int arrow = (int) (8 * (diff+180) / 360);
+		Serial.printf("arrow is %d\n", arrow);
+		uint8_t *tile = arrowtiles[arrow];
+		u8x8->drawTile(de->x+3, de->y, 1, tile);
+	}
 		break;
 	case 'E':
 		// elevation
